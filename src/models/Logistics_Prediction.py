@@ -28,10 +28,14 @@ class Logistics_Prediction:
 		self.run_logistics()
 		self.prediction = self.logistic.predict(self.X)
 		count = 0
+		count0 = 0
 		NN = self.prediction.shape[0]
 		for i in range(len(self.prediction)):
 			if i in self.index_change:
-			    if self.prediction[i] == self.y[i]:
-			        count += 1
-		print 'prediction accuracy',count/len(self.index_change)
-		self.prediction_accuracy = count/len(self.index_change)
+				if self.y[i]==0:
+					count0 += 1
+				else:
+				    if self.prediction[i] == self.y[i]:
+				        count += 1
+		print 'prediction accuracy',count/(len(self.index_change)-count0)
+		self.prediction_accuracy = count/(len(self.index_change)-count0)

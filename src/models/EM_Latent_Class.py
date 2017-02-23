@@ -81,8 +81,12 @@ class EM_Latent_Class:
 			else:
 				self.predictions.append(-1)		
 		count = 0
+		count0 = 0
 		for i in range(len(self.Y_test)):
-			if self.predictions[i] == self.Y_test[i]:
-				count += 1
-		self.predict_acc = count/len(self.Y_test)
+			if self.Y_test[i]==0:
+				count0 +=1
+			else:
+				if self.predictions[i] == self.Y_test[i]:
+					count += 1
+		self.predict_acc = count/(len(self.Y_test)-count0)
 
