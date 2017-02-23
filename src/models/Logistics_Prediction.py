@@ -12,9 +12,15 @@ class Logistics_Prediction:
 		mask = np.ones(self.y.shape[0], dtype=bool)
 		mask[self.index_change] = False
 		self.result_y = self.y[mask,...]
-		# mask = np.ones(self.y.shape[0], dtype=bool)
-		# mask[index_change] = False
 		self.result_X = self.X[mask,...]
+		XX = []
+		YY = []
+		for i in range(len(self.result_y)):
+			if self.result_y[i]!=0:
+				YY.append(self.result_y[i])
+				XX.append(self.result_X[i])
+		self.result_X = np.array(XX)
+		self.result_y = np.array(YY)
 		self.logistic = LogisticRegression()
 		self.logistic.fit(self.result_X,self.result_y)
 

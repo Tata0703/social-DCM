@@ -1,19 +1,14 @@
 from __future__ import division
 import random
-# from snap import *
 import numpy as np
 import numpy.linalg as alg
 import scipy as spy
 import networkx as nx
-
 import time
 from itertools import *
 import sys
 import numpy.linalg as LA
-
 from src.models.GibbsSampler_networkx import GibbsSampler
-from src.models.ADMM import ADMM
-from src.models.ADMM_networkx_weighted import ADMM_networkx_weighted
 from src.models.CVX_weighted import CVX_weighted
 from scipy.special import expit
 
@@ -33,7 +28,6 @@ class EM_CVX_pre:
 		self.b = np.random.random((self.num_nodes,self.num_classes))
 		self.pos_node = []
 		self.iterations = iterations
-		# self.prob_mat = np.zeros((self.num_nodes,self.num_classes))
 		self.posterior_mat = np.zeros((self.num_nodes,self.num_classes))
 		self.burn_In = burn_In
 		self.z_0 = np.random.randint(low = 0,high = self.num_classes-1,size = self.num_nodes)
@@ -42,6 +36,7 @@ class EM_CVX_pre:
 		self.X_test = X_test
 		self.Y_test = Y_test
 		self.index_change = index_change
+		self.expected_LL = 0
 
 	def E_step(self,i):
 		num_Samples = (i+1)*1000
@@ -77,6 +72,7 @@ class EM_CVX_pre:
 		self.posterior_mat_edge = posterior_mat_edge
 
 	def M_step(self):
+		self.old_LL = self.expected_LL
 		self.expected_LL = 0
 		for k in range(self.num_classes):
 			pos_node = []
@@ -90,21 +86,19 @@ class EM_CVX_pre:
 			A = CVX_weighted(self.X, self.y, self.b,pos_node,self.temp,self.Lambda, self.Rho)
 			A.init_P()
 			A.solve()
-	#         A = ADMM_networkx_weighted(X, y, b[:,0],np.array(pos_node),temp,Lambda, Rho)
-	#         A.runADMM_Grid(iterations)
 			self.W[:,k] = A.W.flatten()
 			self.b[:,k] = A.b.flatten()
 			self.expected_LL -= A.value
 
 	def predict(self):
-		# index_change = index_changes[i]
+		old_predictions = self.predictions
+		old_acc = self.acc
+		old_LL = self.old_LL
 		prob  = self.G.node_prob[self.index_change,:]
 		W = self.W
 		b = self.b
 		B = b[self.index_change,:]
 		num_classes = 2
-		# X_test =  X[index_change]
-		# Y_test =  y[index_change]
 		predict_prob_mat = np.zeros((self.Y_test.shape[0],2))
 		for k in range(num_classes):
 			predict_prob_mat[:,0] += np.multiply(expit(np.dot(W[:,k],self.X_test.T)+B[:,k]), prob[:,k] )
@@ -117,46 +111,35 @@ class EM_CVX_pre:
 				self.predictions.append(1)
 			else:
 				self.predictions.append(-1)		
-		count = 0
-		for i in range(len(self.Y_test)):
-			if self.predictions[i] == self.Y_test[i]:
-				count += 1
-		print count/len(self.Y_test)
-		self.acc = count/len(self.Y_test)
+		Y_test = self.Y_test
+		count0 = 0
+		count1 = 0
+		for j in range(Y_test.shape[0]):
+			if Y_test[j] ==0:
+				count0 += 1
+			else:
+				if Y_test[j]==self.predictions[j]:
+					count1 += 1
+		self.acc = count1/(len(self.Y_test)-count0)
+		if self.expected_LL < old_LL:
+			self.predictions = old_predictions
+			self.acc = old_acc
 
 
 	def run_EM(self):
+		self.acc = 0
+		self.predictions = np.zeros(self.Y_test.shape[0])
 		for i in range(self.iterations):
+			print 'iteration: ',i
 			W_old = np.copy(self.W)
 			b_old = np.copy(self.b)
 			self.E_step(i)
 			self.M_step()
-			self.predict()
-			Y_test = self.Y_test
-			count0 = 0
-			count1 = 0
-			for i in range(Y_test.shape[0]):
-				if Y_test[i] ==0:
-					count0 += 1
-				else:
-					if Y_test[i]==self.predictions[i]:
-						count1 += 1
-
-			# print count1/(30-count0)
-			# print count1
-			print 'prediction accuracy on non-zero y',count1/(30-count0)
-			print 'prediction accuracy is',self.acc
-			print 'expected Log likelihood is',self.expected_LL
-			self.LL.append(self.expected_LL)
+			if i>3:
+				self.predict()
+				self.LL.append(self.expected_LL)
 
 
 
 
 
-
-
-
-	# prob_mat_edge = prob_mat_edge.reshape((num_edges,num_classes**2))
-	# posterior_mat_edge[:,0] = np.multiply(prob_mat_edge,prior_edge)[:,0]/np.sum(np.multiply(prob_mat_edge,prior_edge),axis=1)
-	# posterior_mat_edge[:,1] = np.multiply(prob_mat_edge,prior_edge)[:,3]/np.sum(np.multiply(prob_mat_edge,prior_edge),axis=1)
-	# return posterior_mat,posterior_mat_edge

@@ -1,6 +1,5 @@
 from __future__ import division
 import random
-# from snap import *
 import numpy as np
 import numpy.linalg as alg
 import scipy as spy
@@ -30,7 +29,6 @@ class EM_Latent_Class:
 		self.B = np.random.random(self.num_classes)
 		self.posterior_mat = np.random.random((self.num_nodes,self.num_classes))
 		self.p = [0.5,0.5]
-		# self.iterations = iterations
 		self.expected_LL = 0
 		self.converged = False
 		self.X_test = X_test
@@ -41,11 +39,8 @@ class EM_Latent_Class:
 		self.prob_mat = np.zeros((self.num_nodes,self.num_classes))
 		for k in range(self.num_classes):
 			self.prob_mat[:,k] = expit(np.multiply(self.Y.flatten(),np.dot(self.W[:,k],self.X.T)+self.B[k]))
-			# self.prob_mat[:,k] = 1 / (1+np.exp(np.multiply(self.Y.flatten(),-np.dot(self.W[:,k],self.X.T)-np.ones(self.num_nodes)*self.B[k])))
 		for k in range(self.num_classes):
 			self.posterior_mat[:,k] = np.multiply(self.prob_mat,self.p)[:,k]/np.sum(np.multiply(self.prob_mat,self.p),axis=1)
-		# assignment = self.posterior_mat.argmax(axis=1).astype(int)
-		# self.p = np.bincount(assignment)/assignment.shape[0]
 		self.p[1] = np.sum(self.posterior_mat[:,1])/self.posterior_mat.shape[0]
 		self.p[0] = np.sum(self.posterior_mat[:,0])/self.posterior_mat.shape[0]
 
@@ -64,14 +59,12 @@ class EM_Latent_Class:
 	def EM(self):
 		iteration = 1
 		while(self.converged==False):
-			print iteration
+			print 'iteration: ',iteration
 			iteration += 1
 			expected_LL_old = self.expected_LL
 			self.E_step()
 			self.M_step()
-			# print self.p
-			print 'expected Log likelihood is',self.expected_LL
-			if LA.norm(expected_LL_old-self.expected_LL)<0.05:
+			if LA.norm(expected_LL_old-self.expected_LL)< 1:
 				self.converged = True
 	def predict(self):
 		num_nodes = self.X_test.shape[0]
@@ -92,24 +85,4 @@ class EM_Latent_Class:
 			if self.predictions[i] == self.Y_test[i]:
 				count += 1
 		self.predict_acc = count/len(self.Y_test)
-		# num_nodes = self.X_test.shape[0]
-		# self.predict_prob_mat = np.zeros((num_nodes,self.num_classes**2))
-		# for k in range(self.num_classes):
-		# 	index = k*2
-		# 	self.predict_prob_mat[:,index] = expit(np.multiply(self.Y_test.flatten(),np.dot(self.W[:,k],self.X_test.T)+self.B[k]))*self.p[k]
-		# for k in range(self.num_classes):
-		# 	index = k*2
-		# 	self.predict_prob_mat[:,index] = expit(np.multiply(self.Y_test.flatten(),np.dot(self.W[:,k],self.X_test.T)+self.B[k]))*self.p[k]
-		# assignment = self.predict_prob_mat.argmax(axis=1).astype(int)
-		# self.predictions = []
-		# for i in range(len(self.Y_test)):
-		# 	if assignment[i] ==1 or assignment[i] ==3:
-		# 		self.predictions.append(1)
-		# 	else:
-		# 		self.predictions.append(-1)
-		# count = 0
-		# for i in range(len(self.Y_test)):
-		# 	if self.predictions[i] == self.Y_test[i]:
-		# 		count += 1
-		# self.predict_acc = count/len(self.Y_test)
 
