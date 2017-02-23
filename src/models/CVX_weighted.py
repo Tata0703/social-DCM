@@ -1,5 +1,4 @@
 import random
-# from snapvx import *
 import numpy as np
 import numpy.linalg as LA
 import scipy as spy
